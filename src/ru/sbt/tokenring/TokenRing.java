@@ -1,12 +1,20 @@
 package ru.sbt.tokenring;
 
 
+import java.io.*;
+import java.util.Date;
+import java.util.Map;
+import java.util.Random;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class TokenRing {
     private ConcurrentLinkedQueue<Packet>[] packets;
     private Thread[] nodes;
     private int cnt; //finished packets
+    private ConcurrentLinkedQueue<Long> statisticsAverage=new ConcurrentLinkedQueue<Long>();
+    private Map<Long, Integer> throughputMap = new TreeMap<Long, Integer>();
+    private Random random = new Random();
 
     public TokenRing(int n) {
         packets = new ConcurrentLinkedQueue[n];
@@ -17,7 +25,7 @@ public class TokenRing {
         for (int i = 0; i < n; i++) {
             nodes[i] = new Node(packets[i], packets[(i + 1) % n], this);
         }
-        cnt = 0;
+        cnt = n;
     }
 
 
@@ -36,8 +44,45 @@ public class TokenRing {
     }
 
     public void finishedPacket(Packet packet){
-        cnt++;
-        //System.out.printf("Count of dead packets: " + cnt + " Packet: " + packet.toString()+"\n");
+        long diffSeconds = ((new Date()).getTime()-packet.getDate().getTime())/1000;
+        statisticsAverage.add(diffSeconds);
+        synchronized (throughputMap) {
+            Integer count = throughputMap.get(diffSeconds);
+            if (count == null) {
+                throughputMap.put(diffSeconds, 1);
+            }
+            else {
+                throughputMap.put(diffSeconds, count + 1);
+            }
+        }
+    }
+
+
+    public void getWrite() throws IOException {
+        BufferedWriter writer = new BufferedWriter(new FileWriter("10threads.txt"));
+        for (Map.Entry<Long, Integer> entry : throughputMap.entrySet()) {
+            writer.write(entry.getKey() + " " + entry.getValue());
+            writer.newLine();
+        }
+        writer.close();
+
+
+    }
+
+    public void printStatistics() throws IOException {
+        double sum1 = 0;
+        for (Integer value : throughputMap.values()) {
+            sum1 += value;
+        }
+        System.out.println("Average throughput: " + sum1 / throughputMap.size() + " messages/sec");
+        double sum = 0.0;
+        for (double difftime : statisticsAverage) sum += difftime;
+        double avg = sum / statisticsAverage.size();
+        BufferedWriter writer1 = new BufferedWriter(new FileWriter("latency.txt"));
+        writer1.write(cnt + " "+ avg);
+      //  writer1.newLine();
+        writer1.close();
+        System.out.println("Average latency: " + avg);
     }
 
 }

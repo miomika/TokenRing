@@ -1,8 +1,9 @@
 package ru.sbt.tokenring;
-
+import java.util.Date;
 public class Packet {
     private int number = 128;
     private String packet;
+    private Date date = new Date();
 
     public Packet(int number, String packet) {
         this.number = number;
@@ -24,5 +25,9 @@ public class Packet {
     @Override
     public String toString() {
         return  packet;
+    }
+
+    public Date getDate(){
+        return date;
     }
 }
