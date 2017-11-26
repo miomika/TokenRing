@@ -1,7 +1,7 @@
 package ru.sbt.tokenring;
 
 
-import java.util.Date;
+
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class Node extends Thread {
@@ -9,7 +9,7 @@ public class Node extends Thread {
     private ConcurrentLinkedQueue<Packet> outSocket;
     private TokenRing token;
     public static volatile boolean flag = true;
-    private Date start = new Date();
+
 
 
     public Node(ConcurrentLinkedQueue<Packet> inSocket, ConcurrentLinkedQueue<Packet> outSocket, TokenRing token) {

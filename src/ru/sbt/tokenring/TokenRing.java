@@ -4,17 +4,15 @@ package ru.sbt.tokenring;
 import java.io.*;
 import java.util.Date;
 import java.util.Map;
-import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class TokenRing {
     private ConcurrentLinkedQueue<Packet>[] packets;
     private Thread[] nodes;
-    private int cnt; //finished packets
-    private ConcurrentLinkedQueue<Long> statisticsAverage=new ConcurrentLinkedQueue<Long>();
+    private int cnt;
+    private ConcurrentLinkedQueue<Long> statisticsAverage = new ConcurrentLinkedQueue<Long>();
     private Map<Long, Integer> throughputMap = new TreeMap<Long, Integer>();
-    private Random random = new Random();
 
     public TokenRing(int n) {
         packets = new ConcurrentLinkedQueue[n];
@@ -29,30 +27,29 @@ public class TokenRing {
     }
 
 
-    public void start(){
-        for(int i=0; i< nodes.length; i++){
+    public void start() {
+        for (int i = 0; i < nodes.length; i++) {
             nodes[i].start();
         }
     }
 
-    public void stop(){
+    public void stop() {
         Node.flag = false;
     }
 
-    public void sendPacket(Packet packet){
+    public void sendPacket(Packet packet) {
         packets[0].add(packet);
     }
 
-    public void finishedPacket(Packet packet){
-        long diffSeconds = ((new Date()).getTime()-packet.getDate().getTime())/1000;
+    public void finishedPacket(Packet packet) {
+        long diffSeconds = ((new Date()).getTime() - packet.getDate().getTime()) / 1000;
         statisticsAverage.add(diffSeconds);
-        synchronized (throughputMap) {
-            Integer count = throughputMap.get(diffSeconds);
-            if (count == null) {
+        synchronized (throughputMap){
+            Integer tmp = throughputMap.get(diffSeconds);
+            if (tmp == null) {
                 throughputMap.put(diffSeconds, 1);
-            }
-            else {
-                throughputMap.put(diffSeconds, count + 1);
+            } else {
+                throughputMap.put(diffSeconds, tmp + 1);
             }
         }
     }
@@ -65,24 +62,22 @@ public class TokenRing {
             writer.newLine();
         }
         writer.close();
-
-
     }
 
-    public void printStatistics() throws IOException {
+    public void statistics() throws IOException {
         double sum1 = 0;
         for (Integer value : throughputMap.values()) {
             sum1 += value;
         }
-        System.out.println("Average throughput: " + sum1 / throughputMap.size() + " messages/sec");
+        double avgThroughput = sum1 / throughputMap.size();
+        System.out.println("Average throughput: " + avgThroughput + " messages/sec");
         double sum = 0.0;
         for (double difftime : statisticsAverage) sum += difftime;
-        double avg = sum / statisticsAverage.size();
+        double avgLatency = sum / statisticsAverage.size();
+        System.out.println("Average latency: " + avgLatency);
         BufferedWriter writer1 = new BufferedWriter(new FileWriter("latency.txt"));
-        writer1.write(cnt + " "+ avg);
-      //  writer1.newLine();
+        writer1.write(cnt + " " + avgLatency);
         writer1.close();
-        System.out.println("Average latency: " + avg);
     }
 
 }
